@@ -20,20 +20,20 @@ type Server struct {
 	mx *echo.Echo
 }
 
-func New(lg *slog.Logger, probe *readiness.Probe, core Core) (*Server, error) {
+func New(_ *slog.Logger, probe *readiness.Probe, core Core) (*Server, error) {
 	mx := echo.New()
 	mx.Use(
 		middleware.Recover(),
 		middleware.Logger(),
 		middleware.RequestID(),
 	)
+
 	mx.Debug = false
-	// mx.HideBanner = true
-	// mx.HidePort = true
+	mx.HideBanner = true
+	mx.HidePort = true
 	mx.HTTPErrorHandler = func(err error, c echo.Context) {
 		// Take required information from error and context and send it to a service like New Relic
 		// fmt.Println(c.Path(), c.QueryParams(), err.Error())
-
 		mx.DefaultHTTPErrorHandler(err, c)
 	}
 
@@ -43,6 +43,7 @@ func New(lg *slog.Logger, probe *readiness.Probe, core Core) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init common apis: %w", err)
 	}
+
 	err = v1.InitListener(s.mx, core)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init v1 apis: %w", err)
@@ -52,5 +53,5 @@ func New(lg *slog.Logger, probe *readiness.Probe, core Core) (*Server, error) {
 }
 
 func (s *Server) ListenAndServe(addr string) error {
-	return s.mx.Start(addr)
+	return s.mx.Start(addr) //nolint: wrapcheck
 }

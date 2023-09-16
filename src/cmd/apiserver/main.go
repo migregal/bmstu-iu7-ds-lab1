@@ -19,5 +19,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	app.Run()
+	app.Run(lg)
 }

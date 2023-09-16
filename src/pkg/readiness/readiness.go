@@ -10,7 +10,7 @@ type Probe struct {
 }
 
 func New() *Probe {
-	return &Probe{marks: map[string]bool{}}
+	return &Probe{mx: sync.RWMutex{}, marks: map[string]bool{}}
 }
 
 func (p *Probe) Mark(key string, value bool) {

@@ -14,15 +14,15 @@ func New(lg *slog.Logger, probe *readiness.Probe) (*Core, error) {
 	return &Core{}, nil
 }
 
-func (c *Core) AddPerson(ctx context.Context) error    {
+func (c *Core) AddPerson(ctx context.Context) error {
 	return nil
 }
 
-func (c *Core) GetPerson(ctx context.Context) error    {
+func (c *Core) GetPerson(ctx context.Context) error {
 	return nil
 }
 
-func (c *Core) GetPersons(ctx context.Context) error   {
+func (c *Core) GetPersons(ctx context.Context) error {
 	return nil
 }
 

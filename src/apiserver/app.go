@@ -3,7 +3,6 @@ package apiserver
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/migregal/bmstu-iu7-ds-lab1/apiserver/api/http"
 	"github.com/migregal/bmstu-iu7-ds-lab1/apiserver/config"
@@ -36,8 +35,8 @@ func New(lg *slog.Logger, cfg *config.Config) (*App, error) {
 	return &a, nil
 }
 
-func (s *App) Run() {lg := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+func (s *App) Run(lg *slog.Logger) {
 	apiutils.Serve(lg,
-		apiutils.NewCallable(s.cfg.HttpAddr, s.http),
+		apiutils.NewCallable(s.cfg.HTTPAddr, s.http),
 	)
 }

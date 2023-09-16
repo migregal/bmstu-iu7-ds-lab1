@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-
 type Serveable interface {
 	ListenAndServe(adr string) error
 }
@@ -25,8 +24,8 @@ func Serve(lg *slog.Logger, apis ...Callable) {
 		go api(errs)
 	}
 
-	select {
-	case err := <-errs:
+	err := <-errs
+	if err != nil {
 		lg.Error("[shutdown] terminating application: %w", err)
 		os.Exit(1)
 	}

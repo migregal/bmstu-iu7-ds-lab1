@@ -56,23 +56,29 @@ type ValidationErrorResponse struct {
 }
 
 func (a *api) PostPerson(c echo.Context) error {
-	var req PersonRequset
-	err := c.Bind(&req); if err != nil {
+	var (
+		req PersonRequset
+		err error
+	)
+
+	if err = c.Bind(&req); err != nil {
 		// return c.JSON(http.StatusBadRequest, ValidationErrorResponse{})
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	info := PersonResponse{}
 	err = a.core.AddPerson(c.Request().Context())
 	if err != nil {
 		return fmt.Errorf("failed to add new person: %w", err)
 	}
+
+	info := PersonResponse{}
 
 	return c.JSON(http.StatusCreated, info)
 }
 
 func (a *api) GetPersons(c echo.Context) error {
 	infos := make([]PersonResponse, 1)
+
 	err := a.core.GetPersons(c.Request().Context())
 	if err != nil {
 		return fmt.Errorf("failed to get list of persons: %w", err)
@@ -86,13 +92,15 @@ func (a *api) GetPerson(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+
 	id := int32(id64)
 
-	info := PersonResponse{ID: id}
 	err = a.core.GetPerson(c.Request().Context())
 	if err != nil {
 		return fmt.Errorf("failed to get person: %w", err)
 	}
+
+	info := PersonResponse{ID: id}
 
 	return c.JSON(http.StatusOK, info)
 }
@@ -102,6 +110,7 @@ func (a *api) PatchPerson(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+
 	id := int32(id64)
 
 	var req PersonRequset
@@ -110,11 +119,12 @@ func (a *api) PatchPerson(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	info := PersonResponse{ID: id}
 	err = a.core.UpdatePerson(c.Request().Context())
 	if err != nil {
 		return fmt.Errorf("failed to update person: %w", err)
 	}
+
+	info := PersonResponse{ID: id}
 
 	return c.JSON(http.StatusOK, info)
 }
@@ -124,6 +134,7 @@ func (a *api) DeletePerson(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+
 	id := int32(id64)
 
 	var req PersonRequset
