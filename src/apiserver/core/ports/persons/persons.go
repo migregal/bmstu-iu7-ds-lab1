@@ -5,9 +5,7 @@ import (
 	"fmt"
 )
 
-var (
-	ErrNotFound = fmt.Errorf("not found")
-)
+var ErrNotFound = fmt.Errorf("not found")
 
 type Config struct {
 	User     string
