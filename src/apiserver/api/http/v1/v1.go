@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -27,7 +28,7 @@ func InitListener(mx *echo.Echo, core Core) error {
 
 	gr.POST("/persons", a.PostPerson)
 	gr.GET("/persons", a.GetPersons)
-	gr.GET("/persons/:id", a.GetPersons)
+	gr.GET("/persons/:id", a.GetPerson)
 	gr.PATCH("/persons/:id", a.PatchPerson)
 	gr.DELETE("/persons/:id", a.DeletePerson)
 
@@ -38,26 +39,6 @@ type api struct {
 	core Core
 }
 
-type PersonRequset struct {
-	Name    string `json:"name" validate:"required"`
-	Age     int32  `json:"age"`
-	Address string `json:"address"`
-	Work    string `json:"work"`
-}
-
-type PersonResponse struct {
-	ID      int32  `json:"id"`
-	Name    string `json:"name"`
-	Age     int32  `json:"age,omitempty"`
-	Address string `json:"address,omitempty"`
-	Work    string `json:"work,omitempty"`
-}
-
-type ValidationErrorResponse struct {
-	Message string `json:"message"`
-	Errors  string `json:"errors"`
-}
-
 func (a *api) PostPerson(c echo.Context) error {
 	var (
 		req PersonRequset
@@ -65,26 +46,32 @@ func (a *api) PostPerson(c echo.Context) error {
 	)
 
 	if err = c.Bind(&req); err != nil {
-		// return c.JSON(http.StatusBadRequest, ValidationErrorResponse{})
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	_, err = a.core.AddPerson(c.Request().Context(), persons.Person{})
-	if err != nil {
-		return fmt.Errorf("failed to add new person: %w", err)
+	if err = c.Validate(req); err != nil {
+		return err //nolint: wrapcheck
 	}
 
-	info := PersonResponse{}
+	id, err := a.core.AddPerson(c.Request().Context(), personReqToPersons(req))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
-	return c.JSON(http.StatusCreated, info)
+	c.Response().Header().Add("Location", fmt.Sprintf("/api/v1/persons/%d", id))
+
+	return c.NoContent(http.StatusCreated)
 }
 
 func (a *api) GetPersons(c echo.Context) error {
-	infos := make([]PersonResponse, 1)
-
-	_, err := a.core.GetPersons(c.Request().Context(), 0, math.MaxInt32)
+	ps, err := a.core.GetPersons(c.Request().Context(), 0, math.MaxInt32)
 	if err != nil {
-		return fmt.Errorf("failed to get list of persons: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	infos := make([]PersonResponse, 0, len(ps))
+	for _, p := range ps {
+		infos = append(infos, personResponseFromPersons(p))
 	}
 
 	return c.JSON(http.StatusOK, infos)
@@ -98,14 +85,16 @@ func (a *api) GetPerson(c echo.Context) error {
 
 	id := int32(id64)
 
-	_, err = a.core.GetPerson(c.Request().Context(), id)
+	p, err := a.core.GetPerson(c.Request().Context(), id)
 	if err != nil {
-		return fmt.Errorf("failed to get person: %w", err)
+		if errors.Is(err, persons.ErrNotFound) {
+			return c.NoContent(http.StatusNotFound)
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	info := PersonResponse{ID: id}
-
-	return c.JSON(http.StatusOK, info)
+	return c.JSON(http.StatusOK, personResponseFromPersons(p))
 }
 
 func (a *api) PatchPerson(c echo.Context) error {
@@ -118,13 +107,16 @@ func (a *api) PatchPerson(c echo.Context) error {
 
 	var req PersonRequset
 	if err = c.Bind(&req); err != nil {
-		// return c.JSON(http.StatusBadRequest, ValidationErrorResponse{})
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	_, err = a.core.UpdatePerson(c.Request().Context(), persons.Person{})
+	if err = c.Validate(req); err != nil {
+		return err //nolint: wrapcheck
+	}
+
+	_, err = a.core.UpdatePerson(c.Request().Context(), personReqToPersons(req))
 	if err != nil {
-		return fmt.Errorf("failed to update person: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	info := PersonResponse{ID: id}
@@ -142,13 +134,12 @@ func (a *api) DeletePerson(c echo.Context) error {
 
 	var req PersonRequset
 	if err = c.Bind(&req); err != nil {
-		// return c.JSON(http.StatusBadRequest, ValidationErrorResponse{})
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	err = a.core.DeletePerson(c.Request().Context(), id)
 	if err != nil {
-		return fmt.Errorf("failed to delete person: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	info := PersonResponse{ID: id}

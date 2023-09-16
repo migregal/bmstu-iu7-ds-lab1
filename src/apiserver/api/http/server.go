@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
@@ -36,6 +37,7 @@ func New(_ *slog.Logger, probe *readiness.Probe, core Core) (*Server, error) {
 		// fmt.Println(c.Path(), c.QueryParams(), err.Error())
 		mx.DefaultHTTPErrorHandler(err, c)
 	}
+	mx.Validator = &CustomValidator{validator: validator.New()}
 
 	s := Server{mx: mx}
 

@@ -32,25 +32,25 @@ func (c *Core) AddPerson(ctx context.Context, p persons.Person) (int32, error) {
 func (c *Core) GetPerson(ctx context.Context, id int32) (persons.Person, error) {
 	p, err := c.persons.Read(ctx, id)
 	if err != nil {
-		return persons.Person{}, fmt.Errorf("failed to add person: %w", err)
+		return persons.Person{}, fmt.Errorf("failed to get person: %w", err)
 	}
 
 	return p, nil
 }
 
 func (c *Core) GetPersons(ctx context.Context, from, to int32) ([]persons.Person, error) {
-	_, err := c.persons.Read(ctx, 0)
+	p, err := c.persons.ReadWithinRange(ctx, from, to)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add person: %w", err)
+		return nil, fmt.Errorf("failed to get persons: %w", err)
 	}
 
-	return nil, nil
+	return p, nil
 }
 
 func (c *Core) UpdatePerson(ctx context.Context, p persons.Person) (persons.Person, error) {
 	p, err := c.persons.Update(ctx, p)
 	if err != nil {
-		return persons.Person{}, fmt.Errorf("failed to add person: %w", err)
+		return persons.Person{}, fmt.Errorf("failed to update person: %w", err)
 	}
 
 	return p, nil
@@ -59,7 +59,7 @@ func (c *Core) UpdatePerson(ctx context.Context, p persons.Person) (persons.Pers
 func (c *Core) DeletePerson(ctx context.Context, id int32) error {
 	err := c.persons.Delete(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to add person: %w", err)
+		return fmt.Errorf("failed to delete person: %w", err)
 	}
 
 	return nil

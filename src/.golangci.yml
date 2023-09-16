@@ -70,6 +70,7 @@ linters-settings:
       - .JSON(
       - .NoContent(
       - .NewHTTPError(
+      - .Redirect(
   varnamelen:
     max-distance: 6
     min-name-length: 1
