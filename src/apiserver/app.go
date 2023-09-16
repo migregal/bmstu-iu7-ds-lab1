@@ -23,7 +23,7 @@ func New(lg *slog.Logger, cfg *config.Config) (*App, error) {
 
 	probe := readiness.New()
 
-	personsdb, err := personsdb.New(cfg.Persons)
+	personsdb, err := personsdb.New(lg, cfg.Persons, probe)
 	if err != nil {
 		return nil, fmt.Errorf("[startup] failed to connect to personsdb: %w", err)
 	}
