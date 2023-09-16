@@ -22,7 +22,7 @@ type DB struct {
 func New(lg *slog.Logger, cfg persons.Config, probe *readiness.Probe) (*DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName,
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database,
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

@@ -10,7 +10,7 @@ var ErrNotFound = fmt.Errorf("not found")
 type Config struct {
 	User     string
 	Password string
-	DBName   string
+	Database string
 	Host     string
 	Port     int
 }

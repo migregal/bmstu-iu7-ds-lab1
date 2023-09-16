@@ -9,9 +9,13 @@ import (
 )
 
 func main() {
-	cfg := config.ReadConfig()
-
 	lg := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		lg.Error("[startup] failed to init config: %w", err)
+		os.Exit(1)
+	}
 
 	app, err := apiserver.New(lg, cfg)
 	if err != nil {
