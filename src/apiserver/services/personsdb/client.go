@@ -42,11 +42,13 @@ func pingDB(lg *slog.Logger, db *gorm.DB, probe *readiness.Probe) {
 		sqlDB, err := db.DB()
 		if err != nil {
 			lg.Warn("[startup] failed to ping persons db: %w", err)
+
 			continue
 		}
 
 		if err = sqlDB.Ping(); err != nil {
 			lg.Warn("[startup] failed to ping persons db: %w", err)
+
 			continue
 		}
 
@@ -59,18 +61,18 @@ func pingDB(lg *slog.Logger, db *gorm.DB, probe *readiness.Probe) {
 	}
 }
 
-func (d *DB) Create(ctx context.Context) error {
-	return nil
+func (d *DB) Create(ctx context.Context, p persons.Person) (int32, error) {
+	return 0, nil
 }
 
-func (d *DB) Read(ctx context.Context) error {
-	return nil
+func (d *DB) Read(ctx context.Context, id int32) (persons.Person, error) {
+	return persons.Person{}, nil
 }
 
-func (d *DB) Update(ctx context.Context) error {
-	return nil
+func (d *DB) Update(ctx context.Context, p persons.Person) (persons.Person, error) {
+	return persons.Person{}, nil
 }
 
-func (d *DB) Delete(ctx context.Context) error {
+func (d *DB) Delete(ctx context.Context, id int32) error {
 	return nil
 }

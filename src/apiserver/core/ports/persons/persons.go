@@ -18,8 +18,16 @@ type Config struct {
 }
 
 type Client interface {
-	Create(ctx context.Context) error
-	Read(ctx context.Context) error
-	Update(ctx context.Context) error
-	Delete(ctx context.Context) error
+	Create(context.Context, Person) (int32, error)
+	Read(context.Context, int32) (Person, error)
+	Update(context.Context, Person) (Person, error)
+	Delete(context.Context, int32) error
+}
+
+type Person struct {
+	ID      int32
+	Name    string
+	Age     int32
+	Address string
+	Work    string
 }

@@ -3,18 +3,21 @@ package v1
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+
+	"github.com/migregal/bmstu-iu7-ds-lab1/apiserver/core/ports/persons"
 )
 
 type Core interface {
-	AddPerson(context.Context) error
-	GetPerson(context.Context) error
-	GetPersons(context.Context) error
-	UpdatePerson(context.Context) error
-	DeletePerson(context.Context) error
+	AddPerson(context.Context, persons.Person) (int32, error)
+	GetPerson(context.Context, int32) (persons.Person, error)
+	GetPersons(context.Context, int32, int32) ([]persons.Person, error)
+	UpdatePerson(context.Context, persons.Person) (persons.Person, error)
+	DeletePerson(context.Context, int32) error
 }
 
 func InitListener(mx *echo.Echo, core Core) error {
@@ -66,7 +69,7 @@ func (a *api) PostPerson(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err = a.core.AddPerson(c.Request().Context())
+	_, err = a.core.AddPerson(c.Request().Context(), persons.Person{})
 	if err != nil {
 		return fmt.Errorf("failed to add new person: %w", err)
 	}
@@ -79,7 +82,7 @@ func (a *api) PostPerson(c echo.Context) error {
 func (a *api) GetPersons(c echo.Context) error {
 	infos := make([]PersonResponse, 1)
 
-	err := a.core.GetPersons(c.Request().Context())
+	_, err := a.core.GetPersons(c.Request().Context(), 0, math.MaxInt32)
 	if err != nil {
 		return fmt.Errorf("failed to get list of persons: %w", err)
 	}
@@ -95,7 +98,7 @@ func (a *api) GetPerson(c echo.Context) error {
 
 	id := int32(id64)
 
-	err = a.core.GetPerson(c.Request().Context())
+	_, err = a.core.GetPerson(c.Request().Context(), id)
 	if err != nil {
 		return fmt.Errorf("failed to get person: %w", err)
 	}
@@ -119,7 +122,7 @@ func (a *api) PatchPerson(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err = a.core.UpdatePerson(c.Request().Context())
+	_, err = a.core.UpdatePerson(c.Request().Context(), persons.Person{})
 	if err != nil {
 		return fmt.Errorf("failed to update person: %w", err)
 	}
@@ -143,7 +146,7 @@ func (a *api) DeletePerson(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err = a.core.DeletePerson(c.Request().Context())
+	err = a.core.DeletePerson(c.Request().Context(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete person: %w", err)
 	}

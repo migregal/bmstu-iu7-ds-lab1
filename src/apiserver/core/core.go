@@ -13,48 +13,51 @@ type Core struct {
 	persons persons.Client
 }
 
-func New(_ *slog.Logger, probe *readiness.Probe, persons persons.Client) (*Core, error) {
+func New(lg *slog.Logger, probe *readiness.Probe, persons persons.Client) (*Core, error) {
+	probe.Mark("core", true)
+	lg.Warn("[startup] core ready")
+
 	return &Core{persons: persons}, nil
 }
 
-func (c *Core) AddPerson(ctx context.Context) error {
-	err := c.persons.Create(ctx)
+func (c *Core) AddPerson(ctx context.Context, p persons.Person) (int32, error) {
+	id, err := c.persons.Create(ctx, p)
 	if err != nil {
-		return fmt.Errorf("failed to add person: %w", err)
+		return 0, fmt.Errorf("failed to add person: %w", err)
 	}
 
-	return nil
+	return id, nil
 }
 
-func (c *Core) GetPerson(ctx context.Context) error {
-	err := c.persons.Read(ctx)
+func (c *Core) GetPerson(ctx context.Context, id int32) (persons.Person, error) {
+	p, err := c.persons.Read(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to add person: %w", err)
+		return persons.Person{}, fmt.Errorf("failed to add person: %w", err)
 	}
 
-	return nil
+	return p, nil
 }
 
-func (c *Core) GetPersons(ctx context.Context) error {
-	err := c.persons.Read(ctx)
+func (c *Core) GetPersons(ctx context.Context, from, to int32) ([]persons.Person, error) {
+	_, err := c.persons.Read(ctx, 0)
 	if err != nil {
-		return fmt.Errorf("failed to add person: %w", err)
+		return nil, fmt.Errorf("failed to add person: %w", err)
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (c *Core) UpdatePerson(ctx context.Context) error {
-	err := c.persons.Update(ctx)
+func (c *Core) UpdatePerson(ctx context.Context, p persons.Person) (persons.Person, error) {
+	p, err := c.persons.Update(ctx, p)
 	if err != nil {
-		return fmt.Errorf("failed to add person: %w", err)
+		return persons.Person{}, fmt.Errorf("failed to add person: %w", err)
 	}
 
-	return nil
+	return p, nil
 }
 
-func (c *Core) DeletePerson(ctx context.Context) error {
-	err := c.persons.Delete(ctx)
+func (c *Core) DeletePerson(ctx context.Context, id int32) error {
+	err := c.persons.Delete(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to add person: %w", err)
 	}
