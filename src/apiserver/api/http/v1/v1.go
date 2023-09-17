@@ -133,14 +133,7 @@ func (a *api) DeletePerson(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	id := int32(id64)
-
-	var req PersonRequset
-	if err = c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	err = a.core.DeletePerson(c.Request().Context(), id)
+	err = a.core.DeletePerson(c.Request().Context(), int32(id64))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
