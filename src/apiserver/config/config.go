@@ -17,7 +17,7 @@ type Config struct {
 func ReadConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("/etc/apiserver/")
+	viper.AddConfigPath("/usr/local/etc/apiserver")
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("http_addr", ":8080")
@@ -29,12 +29,12 @@ func ReadConfig() (*Config, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("[startup] failed to read config: %w", err)
+		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("[startup] failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	return &cfg, nil

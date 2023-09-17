@@ -1,6 +1,7 @@
 package personsdb
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -15,13 +16,13 @@ func runMigrations(lg *slog.Logger, db *gorm.DB, probe *readiness.Probe) {
 	for {
 		sqlDB, err := db.DB()
 		if err != nil {
-			lg.Warn("[startup] failed to ping persons db: %w", err)
+			lg.Warn("[startup] failed to ping persons db", "error", err.Error())
 
 			continue
 		}
 
 		if err = sqlDB.Ping(); err != nil {
-			lg.Warn("[startup] failed to ping persons db: %w", err)
+			lg.Warn("[startup] failed to ping persons db", "error", err.Error())
 
 			continue
 		}
@@ -47,7 +48,7 @@ func migrateModels(lg *slog.Logger, db *gorm.DB, models map[string]any) bool {
 	for k, v := range models {
 		v := v
 		if err := db.AutoMigrate(&v); err != nil {
-			lg.Warn("[startup] failed to migrate %s: %w", k, err)
+			lg.Warn(fmt.Sprintf("[startup] failed to migrate %s", k), "err", err)
 			tx.Rollback()
 
 			return false
@@ -55,7 +56,7 @@ func migrateModels(lg *slog.Logger, db *gorm.DB, models map[string]any) bool {
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		lg.Warn("[startup] failed to commit transaction: %w", err)
+		lg.Warn("[startup] failed to commit transaction", "err", err)
 
 		return false
 	}

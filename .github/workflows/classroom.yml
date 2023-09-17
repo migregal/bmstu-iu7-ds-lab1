@@ -27,6 +27,7 @@ jobs:
   build:
     name: Build apiserver
     runs-on: ubuntu-latest
+    needs: [unit-test]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -49,23 +50,52 @@ jobs:
           retention-days: 1
 
   integration-test:
-    name: Autograding
+    name: Run integration tests
     runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # TODO build, test and deploy project
+      - uses: docker/setup-buildx-action@v2
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: apiserver
+          path: src/bin/
+
+      - name: Build images
+        timeout-minutes: 10
+        run: docker compose build
+
+      - name: Run containers
+        timeout-minutes: 5
+        run: |
+          docker compose up -d
+        env:
+          WAIT_PORTS: 8080
 
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
           collection: postman/[inst] Lab1.postman_collection.json
-          environment: postman/[inst][heroku] Lab1.postman_environment.json
+          # environment: postman/[inst][heroku] Lab1.postman_environment.json
+          environment: postman/[inst][local] Lab1.postman_environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
 
+      - name: Stop containers
+        if: always()
+        continue-on-error: true
+        run: docker compose down -v
+
+  autograde:
+    name: Autograding
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    steps:
       - name: Autograding
         uses: education/autograding@v1
         continue-on-error: true

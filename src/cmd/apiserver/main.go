@@ -13,13 +13,13 @@ func main() {
 
 	cfg, err := config.ReadConfig()
 	if err != nil {
-		lg.Error("[startup] failed to init config: %w", err)
+		lg.Error("[startup] failed to init config", "err", err.Error())
 		os.Exit(1)
 	}
 
 	app, err := apiserver.New(lg, cfg)
 	if err != nil {
-		lg.Error("[startup] failed to init app: %w", err)
+		lg.Error("[startup] failed to init app", "err", err.Error())
 		os.Exit(1)
 	}
 

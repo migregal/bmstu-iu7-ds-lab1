@@ -26,7 +26,7 @@ func Serve(lg *slog.Logger, apis ...Callable) {
 
 	err := <-errs
 	if err != nil {
-		lg.Error("[shutdown] terminating application: %w", err)
+		lg.Error("[shutdown] terminating application", "error", err.Error())
 		os.Exit(1)
 	}
 }
