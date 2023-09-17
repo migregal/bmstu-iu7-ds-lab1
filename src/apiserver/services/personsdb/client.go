@@ -79,9 +79,21 @@ func (d *DB) ReadWithinRange(_ context.Context, from, to int32) ([]persons.Perso
 }
 
 func (d *DB) Update(_ context.Context, p persons.Person) (persons.Person, error) {
-	data := personFromPort(p)
+	tx := d.db.Begin()
 
-	if err := d.db.Save(&data).Error; err != nil {
+	data := personFromPort(p)
+	if err := d.db.First(&data).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = persons.ErrNotFound
+		}
+
+		return persons.Person{}, fmt.Errorf("failed to read persons: %w", err)
+	}
+
+	data = mergePersons(data, personFromPort(p))
+	if err := tx.Save(&data).Error; err != nil {
+		defer tx.Rollback()
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return persons.Person{}, persons.ErrNotFound
 		}
@@ -89,7 +101,9 @@ func (d *DB) Update(_ context.Context, p persons.Person) (persons.Person, error)
 		return persons.Person{}, fmt.Errorf("failed to update person: %w", err)
 	}
 
-	return persons.Person{}, nil
+	tx.Commit()
+
+	return personToPort(data), nil
 }
 
 func (d *DB) Delete(_ context.Context, id int32) error {

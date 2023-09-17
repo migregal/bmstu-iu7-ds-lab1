@@ -103,8 +103,6 @@ func (a *api) PatchPerson(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	id := int32(id64)
-
 	var req PersonRequset
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -114,14 +112,19 @@ func (a *api) PatchPerson(c echo.Context) error {
 		return err //nolint: wrapcheck
 	}
 
-	_, err = a.core.UpdatePerson(c.Request().Context(), personReqToPersons(req))
+	p := personReqToPersons(req)
+	p.ID = int32(id64)
+
+	p, err = a.core.UpdatePerson(c.Request().Context(), p)
 	if err != nil {
+		if errors.Is(err, persons.ErrNotFound) {
+			return c.NoContent(http.StatusNotFound)
+		}
+
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	info := PersonResponse{ID: id}
-
-	return c.JSON(http.StatusOK, info)
+	return c.JSON(http.StatusOK, personResponseFromPersons(p))
 }
 
 func (a *api) DeletePerson(c echo.Context) error {
@@ -142,7 +145,5 @@ func (a *api) DeletePerson(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	info := PersonResponse{ID: id}
-
-	return c.JSON(http.StatusOK, info)
+	return c.NoContent(http.StatusNoContent)
 }

@@ -31,3 +31,23 @@ func personToPort(p Person) persons.Person {
 		Work:    p.Work,
 	}
 }
+
+func mergePersons(a Person, b Person) Person {
+	if b.Name != "" {
+		a.Name = b.Name
+	}
+
+	if b.Age != 0 {
+		a.Age = b.Age
+	}
+
+	if b.Address != "" {
+		a.Address = b.Address
+	}
+
+	if b.Work != "" {
+		a.Work = b.Work
+	}
+
+	return a
+}
