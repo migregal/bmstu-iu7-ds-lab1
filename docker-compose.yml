@@ -15,6 +15,13 @@ services:
       - "5432:5432"
     networks:
       - database
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   person-service:
     build: .
@@ -22,7 +29,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./src/config-gh.yaml:/usr/local/etc/apiserver/config.yaml
     networks:
