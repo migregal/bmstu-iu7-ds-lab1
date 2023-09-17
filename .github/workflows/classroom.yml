@@ -77,6 +77,19 @@ jobs:
         env:
           WAIT_PORTS: 8080
 
+      - name: Collect docker logs on failure
+        if: "!success()"
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs-docs'
+
+      - name: Upload logs to GitHub
+        if: "!success()"
+        uses: actions/upload-artifact@master
+        with:
+          name: logs-docs
+          path: ./logs-docs/*
+
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
