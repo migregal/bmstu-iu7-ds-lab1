@@ -7,7 +7,48 @@ on:
     branches:
       - master
 jobs:
+  unit-test:
+    name: Run go unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+          cache-dependency-path: src/go.sum
+
+      - name: Test
+        run: cd src && go test -tags=testing -v ./...
+
   build:
+    name: Build apiserver
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+          cache-dependency-path: src/go.sum
+
+      - name: Build apiserver
+        run: cd src && go build -v -o bin/apiserver ./cmd/apiserver/main.go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: apiserver
+          path: src/bin/*
+          retention-days: 1
+
+  integration-test:
     name: Autograding
     runs-on: ubuntu-latest
     steps:
