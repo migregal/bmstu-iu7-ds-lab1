@@ -73,7 +73,7 @@ jobs:
       - name: Run containers
         timeout-minutes: 5
         run: |
-          docker compose up -d
+          docker compose up -d --wait --wait-timeout 120
         env:
           WAIT_PORTS: 8080
 
