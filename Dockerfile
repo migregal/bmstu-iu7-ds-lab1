@@ -4,9 +4,11 @@ LABEL maintainer="Gregory @migregal Mironov"
 RUN mkdir -p /src/backend
 WORKDIR /src/backend
 
+RUN apk add --no-cache make
+
 ADD . .
 
-RUN cd src && go build -v -o /bin/app ./cmd/apiserver
+RUN cd src && make build && mv bin/apiserver /bin
 
 
 FROM alpine
@@ -15,6 +17,6 @@ RUN apk add --no-cache bash ca-certificates
 
 WORKDIR /bin/
 
-COPY --from=builder /bin/app .
+COPY --from=builder /bin/apiserver .
 
-ENTRYPOINT ["/bin/app"]
+ENTRYPOINT ["/bin/apiserver"]

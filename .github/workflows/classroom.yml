@@ -22,7 +22,7 @@ jobs:
           cache-dependency-path: src/go.sum
 
       - name: Test
-        run: cd src && go test -tags=testing -v ./...
+        run: cd src && make test
 
   build:
     name: Build apiserver
@@ -40,7 +40,7 @@ jobs:
           cache-dependency-path: src/go.sum
 
       - name: Build apiserver
-        run: cd src && go build -v -o bin/apiserver ./cmd/apiserver/main.go
+        run: cd src && make build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
