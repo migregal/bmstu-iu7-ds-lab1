@@ -7,23 +7,174 @@ on:
     branches:
       - master
 jobs:
-  build:
-    name: Autograding
+  unit-test:
+    name: Run go unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # TODO build, test and deploy project
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+          cache-dependency-path: src/go.sum
+
+      - name: Test
+        run: cd src && make test
+
+  build:
+    name: Build apiserver
+    runs-on: ubuntu-latest
+    needs: [unit-test]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Build apiserver Image
+        run: |
+          export TAG=${{ github.sha }}
+          docker compose -f docker-compose.yml build
+
+      - name: Upload image
+        uses: ishworkh/container-image-artifact-upload@v1.0.0
+        with:
+          image: "migregal/persons-apiserver:${{ github.sha }}"
+          retention_days: 1
+
+  integration-test:
+    name: Run integration tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Download image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "migregal/persons-apiserver:${{ github.sha }}"
+
+      - name: Pull images
+        timeout-minutes: 1
+        run: |
+          docker load -i /tmp/migregal_persons-apiserver_${{ github.sha }}
+          export TAG=${{ github.sha }}
+          docker compose -f docker-compose.yml pull --ignore-buildable
+
+      - name: Run containers
+        timeout-minutes: 5
+        run: |
+          export TAG=${{ github.sha }}
+          docker compose -f docker-compose.yml up -d --wait --wait-timeout 120
+        env:
+          WAIT_PORTS: 8080
+
+      - name: Collect docker logs on failure
+        if: "!success()"
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs-docs'
+
+      - name: Upload logs to GitHub
+        if: "!success()"
+        uses: actions/upload-artifact@master
+        with:
+          name: logs-docs
+          path: ./logs-docs/*
 
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
           collection: postman/[inst] Lab1.postman_collection.json
-          environment: postman/[inst][heroku] Lab1.postman_environment.json
+          # environment: postman/[inst][heroku] Lab1.postman_environment.json
+          environment: postman/[inst][local] Lab1.postman_environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
+
+      - name: Stop containers
+        if: always()
+        continue-on-error: true
+        run: |
+          export TAG=${{ github.sha }}
+          docker compose -f docker-compose.yml down -v
+
+  publish-image:
+    name: Publish image
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    timeout-minutes: 15
+    steps:
+      - name: Download image
+        uses: ishworkh/container-image-artifact-download@v1.0.0
+        with:
+          image: "migregal/persons-apiserver:${{ github.sha }}"
+
+      - name: Load image
+        timeout-minutes: 1
+        run: |
+          docker load -i /tmp/migregal_persons-apiserver_${{ github.sha }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push images
+        run: |
+          docker push migregal/persons-apiserver:${{ github.sha }}
+          docker tag migregal/persons-apiserver:${{ github.sha }} migregal/persons-apiserver:latest
+          docker push migregal/persons-apiserver:latest
+
+  deploy:
+    name: Deploy image to VM
+    runs-on: ubuntu-latest
+    needs: [publish-image]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Copy Docker Compose to remote
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "docker-compose.prod.yml,src/config-prod.yml,postgres"
+          target: /home/${{ secrets.SSH_USERNAME }}/persons
+
+      - name: Update image version
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SSH_USERNAME }}/persons
+            docker compose -f docker-compose.prod.yml up -d
+
+  autograde:
+    name: Autograding
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Autograding
         uses: education/autograding@v1
